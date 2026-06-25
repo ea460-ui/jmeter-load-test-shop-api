@@ -1,0 +1,171 @@
+openapi: 3.0.3
+info:
+  title: Интернет-магазин API
+  description: Публичный REST API для работы с каталогом товаров и оформлением заказов.
+  version: 1.0.0
+servers:
+  - url: http://example-shop.ru/api
+    description: Основной сервер
+
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Уникальный идентификатор товара.
+        name:
+          type: string
+          description: Название товара.
+        price:
+          type: number
+          format: float
+          description: Цена товара.
+        description:
+          type: string
+          description: Описание товара.
+    OrderItem:
+      type: object
+      properties:
+        productId:
+          type: integer
+          format: int64
+          description: ID товара.
+        quantity:
+          type: integer
+          minimum: 1
+          description: Количество единиц товара.
+    UserInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Имя покупателя.
+        phone:
+          type: string
+          description: Контактный телефон.
+        email:
+          type: string
+          format: email
+          description: Электронная почта покупателя.
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Уникальный номер заказа.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        userInfo:
+          $ref: '#/components/schemas/UserInfo'
+        status:
+          type: string
+          enum:
+            - NEW
+            - PROCESSING
+            - COMPLETED
+            - CANCELLED
+            - ERROR
+
+paths:
+  /products:
+    get:
+      summary: Получить список товаров с поддержкой пагинации.
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            description: Номер страницы.
+        - in: query
+          name: size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            description: Количество товаров на странице.
+      responses:
+        '200':
+          description: Успешный ответ со списком товаров.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+  /products/{id}:
+    get:
+      summary: Получить информацию о конкретном товаре по ID.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Успешный ответ с информацией о товаре.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Товар не найден.
+  /orders/{id}:
+    get:
+      summary: Получить статус заказа по его номеру.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Успешный ответ со статусом заказа.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Заказ не найден.
+  /orders/:
+    post:
+      summary: Создать новый заказ.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - items
+                - userInfo
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/OrderItem'
+                  minItems: 1
+                  description: Список товаров в заказе.
+                userInfo:
+                  $ref: '#/components/schemas/UserInfo'
+                  description: Данные покупателя.
+      responses:
+        '201':
+          description: Заказ успешно создан. В теле ответа возвращается созданный заказ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+# Powered by APIStudio
